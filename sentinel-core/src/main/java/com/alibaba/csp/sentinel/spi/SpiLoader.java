@@ -311,15 +311,18 @@ public final class SpiLoader<S> {
      * Load the Provider class from Provider configuration file
      */
     public void load() {
+        // CAS操作避免加锁了
         if (!loaded.compareAndSet(false, true)) {
             return;
         }
-
+        // 依旧是SPI的路径
+        // 全路径名 ： META-INF/services/ + service.getName()
         String fullFileName = SPI_FILE_PREFIX + service.getName();
         ClassLoader classLoader;
         if (SentinelConfig.shouldUseContextClassloader()) {
             classLoader = Thread.currentThread().getContextClassLoader();
         } else {
+            // 使用父接口的类加载器
             classLoader = service.getClassLoader();
         }
         if (classLoader == null) {
