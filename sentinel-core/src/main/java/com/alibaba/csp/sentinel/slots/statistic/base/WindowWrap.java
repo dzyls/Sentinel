@@ -22,6 +22,7 @@ package com.alibaba.csp.sentinel.slots.statistic.base;
  * @author jialiang.linjl
  * @author Eric Zhao
  */
+// 包装类
 public class WindowWrap<T> {
 
     /**

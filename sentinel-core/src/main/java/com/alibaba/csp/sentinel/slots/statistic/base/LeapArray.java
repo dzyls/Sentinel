@@ -45,6 +45,7 @@ public abstract class LeapArray<T> {
     protected int intervalInMs;
     private double intervalInSecond;
 
+    // 使用AtomicReference是为了CAS操作
     protected final AtomicReferenceArray<WindowWrap<T>> array;
 
     /**
@@ -120,6 +121,7 @@ public abstract class LeapArray<T> {
 
         int idx = calculateTimeIdx(timeMillis);
         // Calculate current bucket start time.
+        // 计算当前窗口的开始的时间，假设当前是17500ms,窗口大小是1000ms,那么窗口的开始应该是17500 - 17500 % 1000 = 17000
         long windowStart = calculateWindowStart(timeMillis);
 
         /*
@@ -144,12 +146,15 @@ public abstract class LeapArray<T> {
                  * then try to update circular array via a CAS operation. Only one thread can
                  * succeed to update, while other threads yield its time slice.
                  */
+                // 数组中每个元素都是一个WindowWrap
                 WindowWrap<T> window = new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));
+                // CAS操作
                 if (array.compareAndSet(idx, null, window)) {
                     // Successfully updated, return the created bucket.
                     return window;
                 } else {
                     // Contention failed, the thread will yield its time slice to wait for bucket available.
+                    // 释放CPU
                     Thread.yield();
                 }
             } else if (windowStart == old.windowStart()) {
@@ -185,6 +190,9 @@ public abstract class LeapArray<T> {
                  */
                 if (updateLock.tryLock()) {
                     try {
+                        // 如果当前的窗口开始时间大于旧的开始时间，说明应该覆盖掉
+                        // reset会将窗口时间设置为当前的窗口时间，并将LongAdder重置
+                        // 再次循环会进入第一个else判断中
                         // Successfully get the update lock, now we reset the bucket.
                         return resetWindowTo(old, windowStart);
                     } finally {
@@ -195,6 +203,7 @@ public abstract class LeapArray<T> {
                     Thread.yield();
                 }
             } else if (windowStart < old.windowStart()) {
+                // 发生了时钟漂移？
                 // Should not go through here, as the provided time is already behind.
                 return new WindowWrap<T>(windowLengthInMs, windowStart, newEmptyBucket(timeMillis));
             }

@@ -242,6 +242,8 @@ public class ArrayMetric implements Metric {
     @Override
     public void addPass(int count) {
         WindowWrap<MetricBucket> wrap = data.currentWindow();
+        // 获取到当前窗口，直接调用add，给对应的LongAdder添加值
+        // Window包装的是MetricBucket对象，而MetricBucket有一个LongAdder数组
         wrap.value().addPass(count);
     }
 
@@ -290,6 +292,7 @@ public class ArrayMetric implements Metric {
      * @param event event to calculate
      * @return total sum for event
      */
+    // 获取滑动窗口的某一项的和
     public long getSum(MetricEvent event) {
         data.currentWindow();
         long sum = 0;
