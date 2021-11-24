@@ -105,6 +105,7 @@ public class StatisticNode implements Node {
     /**
      * The counter for thread count.
      */
+    // longAdder类型的
     private LongAdder curThreadNum = new LongAdder();
 
     /**
